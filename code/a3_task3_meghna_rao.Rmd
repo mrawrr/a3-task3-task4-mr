@@ -1,0 +1,47 @@
+---
+title: "Task 3 - Santa Barbara Urchins"
+author: "Meghna Rao"
+date: "10/29/2021"
+output: html_document
+---
+# Overview
+
+This report is exploring data on red and purple urchins observed at 5 sites along the Santa Barbara coast.
+
+**Data Citation:** [Reed, D. 2020. SBC LTER: Reef: Long-term experiment: Kelp removal: Urchin size frequency distribution ver 20. Environmental Data Initiative.](https://doi.org/10.6073/pasta/5a1e9ef03aa47bd2225c0bb98a02a63b.)
+
+# Setup
+
+```{r setup, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+# Attach Packages
+library(tidyverse)
+library(here)
+library(janitor)
+```
+
+# Read in the Data
+
+Convert the column names into lower snake case.
+
+```{r}
+# Read in Data
+urchins <- read_csv(here("data", "urchins.csv")) %>% 
+  clean_names()
+```
+
+# Section 1 - Size Comparisons of Purple and Red Urchins
+
+## Data Visualization
+
+Create a faceted histogram to compare the size distribution between purple and red urchins.
+
+```{r}
+urchins %>% 
+  ggplot(aes(x = size)) + 
+  geom_histogram(bins = 10, color = "black") +
+  facet_wrap(~ common_name) +
+  labs(x = "Urchin Diameter (cm)",
+       y = "Number of Sea Urchins")
+```
+
