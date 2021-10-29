@@ -18,6 +18,8 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 library(tidyverse)
 library(here)
 library(janitor)
+library(kableExtra)
+library(lubridate)
 ```
 
 # Read in the Data
@@ -42,6 +44,99 @@ urchins %>%
   geom_histogram(bins = 10, color = "black") +
   facet_wrap(~ common_name) +
   labs(x = "Urchin Diameter (cm)",
-       y = "Number of Sea Urchins")
+       y = "Sea Urchin Count",
+       title = "Figure 1: Size Distribution of Purple and Red Urchins",
+       caption = "Fig 1 - This figure shows the size distribution of purple and red sea urchins recorded off the Santa Barbara coast. ") +
+  theme_bw() +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5),
+        plot.caption = element_text(face = "italic", hjust = 0.5))
 ```
 
+## Summary Statistics on Urchins
+
+### Data Wrangling 
+
+Wrangle the urchins data to describe urchin mean size, median, standard deviation of the mean, and the sample size.
+
+```{r}
+urchins_summarized <- urchins %>% 
+  group_by(common_name) %>% 
+  summarize(urchins_mean <- mean(round(size), 2),
+            urchins_median <- median(round(size), 2),
+            urchins_standard_deviation <- sd(round(size), 2),
+            urchins_sample_size <- n())
+```
+
+### Data Visualization
+
+Create a table that includes the summary statistics determined in the data wrangling step for the urchins data.
+
+```{r}
+urchins_summarized %>% 
+  kable(col.names = c("Common Name", 
+                      "Mean Urchin Diameter (cm)", 
+                      "Median Urchin Size (cm)", 
+                      "Standard Deviation (cm)", 
+                      "Sample Size (n)"), 
+        caption = "Figure 2: Summary Statistics on Size Distribution for Purple and Red Sea Urchins." ) %>% 
+  kable_styling(full_width = FALSE, font = 13, position = "center") 
+```
+
+## Results
+
+The average diameter size of red urchins is not the same as the average diameter size of purple urchins. According to Figure 2, the actual difference in mean urchin diameter between the two samples is 2.31 cm, wherein red urchins are found to be 52% larger, on average, than purple urchins. However, in order to determine if this difference is significant, we would need to further wrangle the urchin data to determine a p-value. Red urchins from this sample have a more normal distribution in the spread of their sizes whereas purple urchins from this sample have a more left-skewed distribution. The standard deviation in the average diameter for red urchins from this sample also indicates a higher variance within the sample.
+
+
+# Section 2 - Purple Urchin Counts by Site and Year
+
+## Data wrangling
+
+Create a new data subset titled `purple_urchins` that uses the `urchins` data and only retains the observations for Purple Urchins. Create a new column called `date_new` within the `purple_urchins` dataset to convert the dates within the data frame such that the years are properly formatted. Add a new column titled `years` that contains only the years and another one titled `site_full` that contains the full name of each of the 5 sites used in this study.
+
+```{r}
+purple_urchins <- urchins %>%  
+  filter(common_name == "Purple Urchin") %>% 
+  mutate(date_new = mdy(date)) %>% 
+  mutate(year = year(date_new)) %>% 
+  mutate(site_full = case_when(
+    site == "NAPL" ~ "Naples Reef",
+    site == "AQUE" ~ "Arroyo Quemado Reef",
+    site == "CARP" ~ "Carpinteria Reef",
+    site == "MOHK" ~ "Mohawk Reef", 
+    site == "IVEE" ~ "Isla Vista Reef"))
+```
+
+Store a table of the total number of purple urchins observed by site and year in a new data subset titled `purple_urchins_site_year`.
+
+```{r}
+purple_urchins_site_year <- purple_urchins %>% # storing a new data frame from purple_urchins
+  count(site_full, year) # counting total observations by site and year
+```
+
+
+## Data Visualization
+
+Using the `purple_urchins_site_year` data, create a line graph that displays  `year` on the x-axis and the urchin count `n` on your y-axis. The graph should display each site by color. 
+
+```{r}
+purple_urchins_site_year %>% 
+  ggplot(aes(x = year,
+           y = n, 
+           color = site_full)) + 
+  geom_line() + 
+  theme_bw() + 
+  theme(legend.title = element_blank()) + 
+  labs(x = "Year", 
+       y = "Purple Urchins Counted",
+       title = "Figure 3: Purple Urchins Observed between 2008 - 2020",
+       caption = "Fig 3 - This figure shows the Purple Urchins counted at 5 sites along the Santa Barbara Coast between 2008 and 2020") +
+  scale_x_continuous(breaks = 2008:2020) +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5),
+        plot.caption = element_text(face = "italic", hjust = 0.2))
+```
+
+## Results and Discussion
+
+Figure 3 shows purple urchin populations declining across all 5 sites sampled along the Santa Barbara coast. However, some sites were annually treated to remove giant kelp once each winter and allowed to colonize over the course of the year while other sites were left intact. Since Figure 3 does not does not account for the differences in urchin counts between experimental kelp treatments, it would not be representative of actual changes in purple urchin populations over time. In order for the changes in counts by year to be reflective of actual changes in purple urchin populations, we would need to account for the effect of experimental kelp treatment on purple urchin populations.
+
+# End Task
