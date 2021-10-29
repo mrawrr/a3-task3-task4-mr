@@ -1,0 +1,120 @@
+---
+title: "Task 4 - Naples Reef (2010) Purple Urchins"
+author: "Meghna Rao"
+date: "10/29/2021"
+output: html_document
+---
+
+# Overview
+
+This report wrangles and visualizes data on the size of purple urchins observed along the coast of Santa Barbara who have undergone two different experimental kelp treatments. Exploratory faceted histograms and QQ-plots were generated for the size distribution of purple urchins at Naples Reef in 2010, separated by treatment. A brief assessment on normality was postulated.
+
+**Data Citation:** [Reed, D. 2020. SBC LTER: Reef: Long-term experiment:
+Kelp removal: Urchin size frequency distribution ver 20. Environmental
+Data Initiative.](https://doi.org/10.6073/pasta/5a1e9ef03aa47bd2225c0bb98a02a63b)
+
+```{r setup, include=TRUE, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(here)
+library(janitor)
+library(lubridate)
+library(kableExtra)
+```
+
+# Read in the Data
+
+Convert the column names into lower snake case.
+
+```{r}
+# Read in Data
+urchins <- read_csv(here("data", "urchins.csv")) %>% 
+  clean_names()
+```
+
+# Data Wrangling
+
+Create a new data subset titled `purple_urchins_naples` that only contains observations for purple urchins from Naples Reef `NAPL`. Convert the dates within your subset such that the years are properly formatted. Add a new column titled `years` that contains only the years and filter observations for the year `2010`.
+
+```{r}
+purple_urchins_naples <- urchins %>% 
+  filter(common_name == "Purple Urchin",
+         site == "NAPL") %>% 
+  mutate(date_year = mdy(date)) %>% 
+  mutate(year = year(date_year)) %>% 
+  filter(year == "2010")
+```
+
+# Data Visualization
+
+## Exploratory Faceted Histogram
+
+Create a faceted histogram to visualize the data in `purple_urchins`.
+
+```{r}
+purple_urchins_naples %>%
+  ggplot(aes(x = size, 
+             fill = treatment, 
+             color = treatment)) +
+         geom_histogram(bins = 10, # create a histogram
+                        color = "black",
+                        show.legend = FALSE) + # hide legend
+  facet_wrap(~ treatment) + # separate the graphs by treatment
+   labs(y = "Purple Urchin Count", 
+       x = "Urchin Diamter (cm)", 
+       title = "Figure 1: Size Distributions of Purple Urchins at Naples in 2010",
+       fill = "Experimental Kelp Treatment") +
+  theme_bw() +
+  theme(plot.title = element_text(face = "bold", 
+                                  hjust = 0.5))
+```
+
+
+## Exploratory QQ-plot
+
+Create a qq-plot to visualize the data in `purple_urchins`.
+
+```{r}
+purple_urchins_naples %>% 
+  ggplot(aes(sample = size)) + 
+  geom_qq(aes(color = treatment), # create a qq-plot
+          show.legend = FALSE) + # hide legend
+  facet_wrap(~ treatment) + # separate plots by treatment
+  labs(y = "Purple Urchin Count", 
+       x = "Urchin Diamter (cm)", 
+       title = "Figure 2: Size Distributions of Purple Urchins at Naples in 2010",
+       fill = "Experimental Kelp Treatment") +
+  theme_bw() +
+  theme(plot.title = element_text(face = "bold", 
+                                  hjust = 0.5))
+```
+
+### Preliminary Results and Analysis
+
+Our preliminary data visualization yields a histogram that shows that the sample of purple urchins observed under the control treatment had a more normal distribution than that of the purple urchins under the annual treatment had a more right-skewed distribution. Also, the qq-plot for the purple urchins in the control treatment was slightly more linear than the qq-plot for the purple urchins in the annual treatment. We cannot yet conclude that the sample means are significantly different, but perhaps these exploratory observed differences can be attributed to the function of giant kelp in the life stages of a purple urchin.
+
+## Summary Statistics 
+
+Create a new data set called `purple_urchins_naples_2010` that uses the `purple_urchins_naples` data and groups under the hood by treatment. Then use the new data subset to create a table that shows descriptive statistics for the two experimental kelp treatments.
+
+```{r}
+purple_urchins_naples_2010 <- purple_urchins_naples %>% 
+  group_by(treatment) %>%  # group experimental kelp treatments
+  summarize(mean = round(mean(size), 3), # create summary statistics
+            median = round(median(size), 3), 
+            stdev = round(sd(size), 3), 
+            sample_size = n())
+purple_urchins_naples_2010 %>% 
+  kable(col.names = c("Treatment", # visualize summary statistics in a table
+                      "Mean Urchin Diameter (cm)", 
+                      "Median Urchin Size (cm)", 
+                      "Standard Deviation (cm)", 
+                      "Sample Size (n)"), 
+        caption = "Table 1: Descriptive Statistics for Purple Urchins collected at Naples Reef in 2010" ) %>% 
+  kable_styling(full_width = FALSE, 
+                font = 13, 
+                position = "center")
+```
+
+
+# End Task
